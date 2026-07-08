@@ -199,6 +199,36 @@ function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;',
 
 document.getElementById('form-body').addEventListener('input', renderPreview);
 document.getElementById('form-body').addEventListener('change', renderPreview);
+document.getElementById('form-body').addEventListener('focusout', (e) => {
+  const t = e.target;
+  const MONEY_FIELD_IDS = ['f-dp', 'f-dpunit', 'f-init', 'f-balance'];
+  let shouldFormat = false;
+
+  if (t.classList && t.classList.contains('cov-value')) {
+    const row = t.closest('.cov-row');
+    const label = (row ? row.querySelector('.cov-label').value : '').toLowerCase();
+    // no formatear campos que son conteos, no dinero (Miles, Power Units, etc.)
+    if (!label.includes('miles') && !label.includes('unit')) shouldFormat = true;
+  } else if (MONEY_FIELD_IDS.includes(t.id)) {
+    shouldFormat = true;
+  } else if (t.classList && t.classList.contains('pay-amount')) {
+    shouldFormat = true;
+  }
+
+  if (shouldFormat && looksLikePlainAmount(t.value)) {
+    t.value = formatAsMoney(t.value);
+    renderPreview();
+  }
+});
+
+function looksLikePlainAmount(s){
+  return /^[\d.,\s$]+$/.test(s || '') && /\d/.test(s || '');
+}
+function formatAsMoney(s){
+  const digits = String(s).replace(/[^0-9]/g, '');
+  if (!digits) return s;
+  return '$' + parseInt(digits, 10).toLocaleString('en-US');
+}
 
 function buildForm(){
   const body = document.getElementById('form-body');
