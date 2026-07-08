@@ -6,7 +6,8 @@
 <title>Truemate Group | Cotización Trucking</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --navy:#0E2438;
@@ -374,35 +375,86 @@ function renderPreview(){
 }
 
 /* ===== export actions ===== */
-document.getElementById('pdf-btn').addEventListener('click', () => {
-  const d = collectData();
+function safeName(d){ return (d.company||'cliente').replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,''); }
+
+function captureCanvas(){
   const el = document.getElementById('doc');
-  const opt = {
-    margin: 0,
-    filename: `Cotizacion-${(d.company||'cliente').replace(/[^a-z0-9]+/gi,'-')}.pdf`,
-    image: { type:'jpeg', quality:0.98 },
-    html2canvas: { scale:2, backgroundColor:'#F5F3EE' },
-    jsPDF: { unit:'pt', format:'letter', orientation:'portrait' }
-  };
-  html2pdf().set(opt).from(el).save();
+  return html2canvas(el, { scale:2, backgroundColor:'#F5F3EE', useCORS:true });
+}
+
+function buildPdfBlob(canvas){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit:'pt', format:'letter', orientation:'portrait' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = canvas.height * imgWidth / canvas.width;
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+  return pdf;
+}
+
+function setBtnBusy(btn, busyText){
+  const original = btn.textContent;
+  btn.textContent = busyText;
+  btn.disabled = true;
+  return () => { btn.textContent = original; btn.disabled = false; };
+}
+
+document.getElementById('pdf-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('pdf-btn');
+  const restore = setBtnBusy(btn, 'Generando PDF...');
+  try {
+    const d = collectData();
+    const canvas = await captureCanvas();
+    const pdf = buildPdfBlob(canvas);
+    pdf.save(`Cotizacion-${safeName(d)}.pdf`);
+  } catch (e) {
+    alert('No se pudo generar el PDF: ' + e.message);
+  } finally { restore(); }
 });
 
-document.getElementById('img-btn').addEventListener('click', () => {
-  const d = collectData();
-  const el = document.getElementById('doc');
-  html2canvas(el, { scale:2, backgroundColor:'#F5F3EE' }).then(canvas => {
+document.getElementById('img-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('img-btn');
+  const restore = setBtnBusy(btn, 'Generando imagen...');
+  try {
+    const d = collectData();
+    const canvas = await captureCanvas();
     const link = document.createElement('a');
-    link.download = `Cotizacion-${(d.company||'cliente').replace(/[^a-z0-9]+/gi,'-')}.png`;
+    link.download = `Cotizacion-${safeName(d)}.png`;
     link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
     link.click();
-  });
+    link.remove();
+  } catch (e) {
+    alert('No se pudo generar la imagen: ' + e.message);
+  } finally { restore(); }
 });
 
-document.getElementById('wa-btn').addEventListener('click', () => {
-  const d = collectData();
-  const msg = `¡Hola! 👋 Te comparto la cotización de *${d.company}* preparada por Truemate Group. Adjunto el PDF/imagen a continuación. Quedamos atentos a cualquier duda. ✅`;
-  const wa = d.wa ? `https://wa.me/${d.wa}?text=` : 'https://wa.me/?text=';
-  window.open(wa + encodeURIComponent(msg), '_blank');
+document.getElementById('wa-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('wa-btn');
+  const restore = setBtnBusy(btn, 'Preparando...');
+  try {
+    const d = collectData();
+    const canvas = await captureCanvas();
+    const pdf = buildPdfBlob(canvas);
+    pdf.save(`Cotizacion-${safeName(d)}.pdf`);
+    const msg = `¡Hola! 👋 Te comparto la cotización de *${d.company}* preparada por Truemate Group.\n\nAcabo de descargar el PDF a tu carpeta de Descargas — adjúntalo aquí en el chat con el clip 📎 antes de enviar.\n\nQuedamos atentos a cualquier duda. ✅`;
+    const wa = d.wa ? `https://wa.me/${d.wa}?text=` : 'https://wa.me/?text=';
+    setTimeout(() => window.open(wa + encodeURIComponent(msg), '_blank'), 400);
+  } catch (e) {
+    alert('No se pudo preparar el envío: ' + e.message);
+  } finally { restore(); }
 });
 
 document.getElementById('link-btn').addEventListener('click', () => {
