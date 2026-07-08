@@ -224,10 +224,46 @@ document.getElementById('form-body').addEventListener('focusout', (e) => {
 function looksLikePlainAmount(s){
   return /^[\d.,\s$]+$/.test(s || '') && /\d/.test(s || '');
 }
+
+function parseMoneyInput(raw){
+  let s = String(raw || '').trim().replace(/[$\s]/g, '');
+  if (!s) return null;
+
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+
+  if (hasComma && hasDot) {
+    // formato US: coma = miles, punto = decimal → "1,359.87"
+    return parseFloat(s.replace(/,/g, ''));
+  }
+  if (hasComma && !hasDot) {
+    const parts = s.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // coma usada como decimal → "1359,87"
+      return parseFloat(parts[0] + '.' + parts[1]);
+    }
+    // coma(s) como separador de miles → "135,987" o "1,359,800"
+    return parseFloat(parts.join(''));
+  }
+  if (hasDot && !hasComma) {
+    const parts = s.split('.');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // punto decimal normal → "1359.87"
+      return parseFloat(s);
+    }
+    // punto usado como separador de miles → "750.000"
+    return parseFloat(parts.join(''));
+  }
+  return parseFloat(s);
+}
+
 function formatAsMoney(s){
-  const digits = String(s).replace(/[^0-9]/g, '');
-  if (!digits) return s;
-  return '$' + parseInt(digits, 10).toLocaleString('en-US');
+  const num = parseMoneyInput(s);
+  if (num === null || isNaN(num)) return s;
+  const hasCents = Math.round(num * 100) % 100 !== 0;
+  return '$' + num.toLocaleString('en-US', hasCents
+    ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+    : { maximumFractionDigits: 0 });
 }
 
 function buildForm(){
@@ -308,11 +344,12 @@ function buildForm(){
     </div>
 
     <div class="section-title">Calendario de pagos</div>
+    <div class="hint">Escribe la fecha del pago #1 y usa "Autocompletar fechas" para llenar el resto sumando un mes cada vez.</div>
     <table class="pay-table" id="pay-table">
       <thead><tr><th style="width:26px">#</th><th>Fecha</th><th>Monto</th><th></th></tr></thead>
       <tbody id="pay-body"></tbody>
     </table>
-    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button></div>
+    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button><button type="button" class="btn btn-ghost btn-sm" id="autofill-dates-btn">📅 Autocompletar fechas mensuales</button></div>
 
     <div class="section-title">Resumen</div>
     <div class="field-row">
@@ -327,7 +364,35 @@ function buildForm(){
   addPayRow(); addPayRow(); addPayRow();
   document.getElementById('add-cov').addEventListener('click', () => { addCovRow({on:true,label:"",value:""}); renderPreview(); });
   document.getElementById('add-pay').addEventListener('click', () => { addPayRow(); renderPreview(); });
+  document.getElementById('autofill-dates-btn').addEventListener('click', autofillMonthlyDates);
   setupSavedQuotes();
+}
+
+function parseDateMMDDYYYY(s){
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((s || '').trim());
+  if (!m) return null;
+  return new Date(parseInt(m[3], 10), parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+}
+function formatDateMMDDYYYY(d){
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${mm}/${dd}/${d.getFullYear()}`;
+}
+function autofillMonthlyDates(){
+  const rows = [...document.querySelectorAll('#pay-body tr')];
+  if (!rows.length) return;
+  const firstInput = rows[0].querySelector('.pay-date');
+  const base = parseDateMMDDYYYY(firstInput.value);
+  if (!base) {
+    alert('Escribe primero la fecha del pago #1 en formato MM/DD/YYYY (ej. 07/20/2026).');
+    return;
+  }
+  rows.forEach((row, i) => {
+    if (i === 0) return;
+    const d = new Date(base.getFullYear(), base.getMonth() + i, base.getDate());
+    row.querySelector('.pay-date').value = formatDateMMDDYYYY(d);
+  });
+  renderPreview();
 }
 
 function addCovRow(c){
