@@ -203,13 +203,18 @@ document.getElementById('form-body').addEventListener('change', renderPreview);
 function buildForm(){
   const body = document.getElementById('form-body');
   body.innerHTML = `
-    <div class="section-title" style="margin-top:0;padding-top:0;border-top:none;">Cotizaciones guardadas</div>
-    <div class="hint" id="sync-status">Sin conectar — se guardan solo en este navegador.</div>
-    <div class="field-row single">
-      <div class="field"><label>URL de Google Sheet (Apps Script)</label>
-        <div style="display:flex;gap:6px;">
-          <input id="gs-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
-          <button type="button" class="btn btn-sm" id="gs-connect-btn" style="white-space:nowrap;">Conectar</button>
+    <div class="section-title" style="margin-top:0;padding-top:0;border-top:none;display:flex;justify-content:space-between;align-items:center;">
+      <span>Cotizaciones guardadas</span>
+      <button type="button" id="gs-config-toggle" style="background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;padding:2px 4px;" title="Configuración avanzada">⚙</button>
+    </div>
+    <div id="gs-config-panel" class="hidden">
+      <div class="hint" id="sync-status">Sin conectar — se guardan solo en este navegador.</div>
+      <div class="field-row single">
+        <div class="field"><label>URL de Google Sheet (Apps Script)</label>
+          <div style="display:flex;gap:6px;">
+            <input id="gs-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
+            <button type="button" class="btn btn-sm" id="gs-connect-btn" style="white-space:nowrap;">Conectar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -506,15 +511,22 @@ const STORE_KEY = 'truemate_trucking_quotes_v1';
 const GS_URL_KEY = 'truemate_gsheet_url';
 const RAW_FIELD_IDS = ['f-company','f-option','f-usdot','f-mc','f-effdate','f-status','f-benefits','f-dp','f-dpunit','f-init','f-balance','f-advisor','f-wa'];
 
-function getGSUrl(){ return (localStorage.getItem(GS_URL_KEY) || '').trim(); }
-function setGSUrl(url){ localStorage.setItem(GS_URL_KEY, url.trim()); }
+const DEFAULT_GS_URL = 'https://script.google.com/macros/s/AKfycbze5E6FqQVfSW5mp8q0hMCzcnqW7usnfhjdE0_wKWYhqdlH9Csc6HEqjGUcaGMQ-5Su/exec';
+function getGSUrl(){
+  try {
+    const stored = (localStorage.getItem(GS_URL_KEY) || '').trim();
+    if (stored) return stored;
+  } catch (e) { /* localStorage bloqueado (ej. dentro de un iframe/CRM) */ }
+  return DEFAULT_GS_URL;
+}
+function setGSUrl(url){ try { localStorage.setItem(GS_URL_KEY, url.trim()); } catch (e) { /* ignorar si está bloqueado */ } }
 
 function getStore(){
   try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
   catch (e) { return {}; }
 }
 function setStore(obj){
-  localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(obj)); } catch (e) { /* ignorar si está bloqueado */ }
 }
 
 async function gsGet(params){
@@ -599,6 +611,22 @@ async function refreshSavedList(){
 }
 
 function setupSavedQuotes(){
+  const ACCESS_CODE = '5093';
+  document.getElementById('gs-config-toggle').addEventListener('click', () => {
+    const panel = document.getElementById('gs-config-panel');
+    if (!panel.classList.contains('hidden')) {
+      panel.classList.add('hidden');
+      return;
+    }
+    const code = prompt('Código de acceso:');
+    if (code === null) return;
+    if (code.trim() === ACCESS_CODE) {
+      panel.classList.remove('hidden');
+    } else {
+      alert('Código incorrecto.');
+    }
+  });
+
   document.getElementById('gs-url').value = getGSUrl();
   updateSyncStatus();
   refreshSavedList();
