@@ -90,54 +90,55 @@
   .preview-scroll{max-height:calc(100vh - 190px);overflow-y:auto;background:var(--paper);}
 
   /* ===== DOC (live preview / export target) ===== */
-  #doc{max-width:680px;margin:0 auto;padding:34px 26px 50px;background:var(--paper);}
-  .doc-header{text-align:center;margin-bottom:20px;}
-  .doc-header .tagline{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:6px;}
+  #doc{max-width:680px;margin:0 auto;padding:26px 26px 30px;background:var(--paper);}
+  .doc-header{text-align:center;margin-bottom:14px;}
+  .doc-header .tagline{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:4px;}
   .doc-header .agency{font-family:'Fraunces',serif;font-weight:700;font-size:24px;color:var(--navy);}
-  .doc-header .sub{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.7;}
-  .doc-header img.logo{max-width:280px;height:auto;margin-bottom:10px;}
-  .doc-rule{height:3px;background:linear-gradient(90deg,var(--navy),var(--amber));margin:16px 0 24px;border-radius:2px;}
+  .doc-header .sub{font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .doc-header img.logo{max-width:220px;height:auto;margin-bottom:6px;}
+  .doc-rule{height:3px;background:linear-gradient(90deg,var(--navy),var(--amber));margin:12px 0 16px;border-radius:2px;}
 
-  .status-chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;background:#E4F0E6;color:var(--ok);margin-bottom:14px;}
-  .doc-title{font-family:'Fraunces',serif;font-weight:600;font-size:20px;margin:0 0 3px;}
-  .doc-subtitle{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;font-style:italic;}
+  .status-chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 11px;border-radius:20px;background:#E4F0E6;color:var(--ok);margin-bottom:10px;}
+  .doc-title{font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0 0 2px;}
+  .doc-subtitle{font-size:12px;color:var(--ink-soft);margin:0 0 12px;font-style:italic;}
 
-  .company-band{background:var(--navy);color:var(--white);padding:14px 18px;border-radius:var(--radius) var(--radius) 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;}
+  .company-band{background:var(--navy);color:var(--white);padding:11px 16px;border-radius:var(--radius) var(--radius) 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;}
   .company-band .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
   .company-band .meta{font-size:10.5px;color:#B9C4CE;font-family:'JetBrains Mono',monospace;}
 
   .cov-card{border:1px solid var(--line);border-top:none;background:var(--white);}
-  .cov-line{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--paper-2);font-size:13px;}
+  .cov-line{display:flex;justify-content:space-between;padding:7px 16px;border-bottom:1px solid var(--paper-2);font-size:12.5px;}
   .cov-line:last-child{border-bottom:none;}
   .cov-line .k{color:var(--ink-soft);font-weight:500;}
   .cov-line .v{font-weight:600;}
   .cov-line.dp{background:#F5EEDD;}
   .cov-line.dp .k,.cov-line.dp .v{color:var(--navy-2);font-weight:700;}
 
-  .benefits-card{border:1px solid var(--line);background:var(--white);padding:14px 18px;}
-  .benefit-item{display:flex;align-items:baseline;gap:9px;font-size:13px;padding:5px 0;color:var(--ink);}
-  .benefit-item .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;position:relative;top:-1px;}
+  .benefits-card{border:1px solid var(--line);background:var(--white);padding:10px 16px;}
+  .benefit-item{display:flex;align-items:baseline;gap:8px;font-size:12px;padding:4px 0;color:var(--ink);break-inside:avoid;}
+  .benefit-item .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;position:relative;top:-1px;}
+  .benefits-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;}
 
-  .doc-h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--navy-2);margin:24px 0 8px;}
+  .doc-h2{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--navy-2);margin:16px 0 6px;}
 
   table.sched{width:100%;border-collapse:collapse;border:1px solid var(--line);background:var(--white);}
-  table.sched th{background:var(--paper-2);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
-  table.sched td{padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--paper-2);}
+  table.sched th{background:var(--paper-2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);text-align:left;padding:6px 12px;border-bottom:1px solid var(--line);}
+  table.sched td{padding:6px 12px;font-size:12px;border-bottom:1px solid var(--paper-2);}
   table.sched tr:last-child td{border-bottom:none;}
   table.sched td.num{color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:11px;}
   table.sched td.amt{text-align:right;font-weight:600;font-family:'JetBrains Mono',monospace;}
 
   .summary-grid{border:1px solid var(--line);background:var(--white);}
-  .summary-row{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--paper-2);font-size:13px;}
+  .summary-row{display:flex;justify-content:space-between;padding:7px 16px;border-bottom:1px solid var(--paper-2);font-size:12.5px;}
   .summary-row:last-child{border-bottom:none;}
   .summary-row.total{background:#F5EEDD;font-weight:700;}
   .summary-row .k{color:var(--ink-soft);}
   .summary-row.total .k{color:var(--navy-2);}
 
-  .pay-methods{border:1px solid var(--line);background:var(--white);padding:16px 18px;font-size:12.5px;line-height:1.9;}
+  .pay-methods{border:1px solid var(--line);background:var(--white);padding:12px 16px;font-size:12px;line-height:1.6;}
   .pay-methods b{color:var(--navy-2);}
 
-  .doc-footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);text-align:center;line-height:1.8;}
+  .doc-footer{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.6;}
   .doc-footer .advisor{font-weight:700;color:var(--ink);}
 
   .cta-wrap{margin-top:22px;text-align:center;}
@@ -170,6 +171,7 @@
     <div class="export-bar">
       <button class="btn btn-export amber" id="pdf-btn">Descargar PDF</button>
       <button class="btn btn-export" id="img-btn">Descargar imagen (PNG)</button>
+      <button class="btn btn-export" id="copy-img-btn">Copiar imagen</button>
       <button class="btn btn-export wa" id="wa-btn">Enviar por WhatsApp</button>
     </div>
     <div class="preview-scroll"><div id="doc"></div></div>
@@ -334,9 +336,9 @@ function renderPreview(){
 
   const benefitsHtml = d.benefits ? `
     <div class="doc-h2">Beneficios incluidos</div>
-    <div class="benefits-card">
+    <div class="benefits-card"><div class="benefits-grid">
       ${d.benefits.split('·').map(b=>b.trim()).filter(Boolean).map(b=>`<div class="benefit-item"><span class="dot"></span>${escapeHtml(b)}</div>`).join('')}
-    </div>` : '';
+    </div></div>` : '';
 
   const schedHtml = (d.payments||[]).length ? `
     <div class="doc-h2">Calendario de pagos automáticos</div>
@@ -374,9 +376,6 @@ function renderPreview(){
       <b>Zelle:</b> gregorio.navarro@truemategroup.com<br>
       <b>Wire Transfer:</b> J.P. Morgan Chase Bank — Truemate Group LLC DBA GlobalGreen Insurance Agency<br>
       Cuenta 2906971058 · Routing 267084131
-    </div>
-    <div class="cta-wrap">
-      <a class="cta" href="https://wa.me/${d.wa||'13212481894'}?text=${encodeURIComponent('Hola, confirmo mi cotización de '+d.company+'. ¿Cómo procedo con el pago?')}" target="_blank">Confirmar y activar póliza →</a>
     </div>
     <div class="doc-footer">
       Por favor, una vez realizado el pago, envíanos el comprobante para proceder con la activación correspondiente.<br><br>
@@ -438,6 +437,31 @@ document.getElementById('img-btn').addEventListener('click', async () => {
   } catch (e) {
     alert('No se pudo generar la imagen: ' + e.message);
   } finally { restore(); }
+});
+
+document.getElementById('copy-img-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('copy-img-btn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Copiando...';
+  let success = false;
+  try {
+    if (!window.ClipboardItem) {
+      alert('Tu navegador no permite copiar la imagen directamente. Usa "Descargar imagen" y luego insértala manualmente en el correo.');
+      return;
+    }
+    const canvas = await captureCanvas();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    success = true;
+    btn.textContent = '✓ Copiada — pega con Ctrl+V';
+    setTimeout(() => { btn.textContent = original; }, 2500);
+  } catch (e) {
+    alert('No se pudo copiar la imagen: ' + e.message + '\n\nUsa "Descargar imagen" como alternativa.');
+  } finally {
+    btn.disabled = false;
+    if (!success) btn.textContent = original;
+  }
 });
 
 document.getElementById('wa-btn').addEventListener('click', async () => {
