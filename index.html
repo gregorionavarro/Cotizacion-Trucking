@@ -197,14 +197,34 @@ const DEFAULT_COVERAGES = [
 function fmtMoney(n){const num=parseFloat(String(n).replace(/[^0-9.\-]/g,''))||0;return '$'+num.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-buildForm();
-renderPreview();
 document.getElementById('form-body').addEventListener('input', renderPreview);
 document.getElementById('form-body').addEventListener('change', renderPreview);
 
 function buildForm(){
   const body = document.getElementById('form-body');
   body.innerHTML = `
+    <div class="section-title" style="margin-top:0;padding-top:0;border-top:none;">Cotizaciones guardadas</div>
+    <div class="hint" id="sync-status">Sin conectar — se guardan solo en este navegador.</div>
+    <div class="field-row single">
+      <div class="field"><label>URL de Google Sheet (Apps Script)</label>
+        <div style="display:flex;gap:6px;">
+          <input id="gs-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;">
+          <button type="button" class="btn btn-sm" id="gs-connect-btn" style="white-space:nowrap;">Conectar</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-row single">
+      <div class="field"><select id="saved-select"></select></div>
+    </div>
+    <div class="row-actions" style="flex-wrap:wrap;">
+      <button type="button" class="btn btn-sm" id="save-btn">💾 Guardar</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="load-btn">Cargar</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="delete-btn">Eliminar</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="export-btn">Exportar archivo</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="import-btn">Importar archivo</button>
+      <input type="file" id="import-file" accept=".json" class="hidden">
+    </div>
+
     <div class="section-title">Asesor</div>
     <div class="hint">Revisa esto primero — se olvida fácil al copiar una cotización nueva.</div>
     <div class="field-row">
@@ -269,6 +289,7 @@ function buildForm(){
   addPayRow(); addPayRow(); addPayRow();
   document.getElementById('add-cov').addEventListener('click', () => { addCovRow({on:true,label:"",value:""}); renderPreview(); });
   document.getElementById('add-pay').addEventListener('click', () => { addPayRow(); renderPreview(); });
+  setupSavedQuotes();
 }
 
 function addCovRow(c){
@@ -479,6 +500,230 @@ document.getElementById('wa-btn').addEventListener('click', async () => {
     alert('No se pudo preparar el envío: ' + e.message);
   } finally { restore(); }
 });
+
+/* ===== guardar / cargar cotizaciones (Google Sheet vía Apps Script, con respaldo local) ===== */
+const STORE_KEY = 'truemate_trucking_quotes_v1';
+const GS_URL_KEY = 'truemate_gsheet_url';
+const RAW_FIELD_IDS = ['f-company','f-option','f-usdot','f-mc','f-effdate','f-status','f-benefits','f-dp','f-dpunit','f-init','f-balance','f-advisor','f-wa'];
+
+function getGSUrl(){ return (localStorage.getItem(GS_URL_KEY) || '').trim(); }
+function setGSUrl(url){ localStorage.setItem(GS_URL_KEY, url.trim()); }
+
+function getStore(){
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function setStore(obj){
+  localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+}
+
+async function gsGet(params){
+  const url = getGSUrl();
+  if (!url) return null;
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(url + '?' + qs);
+  return res.json();
+}
+async function gsPost(body){
+  const url = getGSUrl();
+  if (!url) return null;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS en Apps Script
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function collectRawState(){
+  const covs = [...document.querySelectorAll('.cov-row')].map(r => ({
+    on: r.querySelector('.cov-on').checked,
+    label: r.querySelector('.cov-label').value,
+    value: r.querySelector('.cov-value').value,
+  }));
+  const payments = [...document.querySelectorAll('#pay-body tr')].map(r => ({
+    date: r.querySelector('.pay-date').value,
+    amount: r.querySelector('.pay-amount').value,
+  }));
+  const fields = {};
+  RAW_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) fields[id] = el.value; });
+  return { fields, covs, payments, savedAt: new Date().toISOString() };
+}
+
+function applyRawState(state){
+  Object.entries(state.fields || {}).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  document.getElementById('cov-list').innerHTML = '';
+  (state.covs || []).forEach(c => addCovRow(c));
+  document.getElementById('pay-body').innerHTML = '';
+  (state.payments || []).forEach(p => addPayRow(p.date, p.amount));
+  renderPreview();
+}
+
+function updateSyncStatus(){
+  const el = document.getElementById('sync-status');
+  if (getGSUrl()) {
+    el.textContent = '✓ Conectado a Google Sheet — visible desde cualquier computador.';
+    el.style.color = 'var(--ok)';
+  } else {
+    el.textContent = 'Sin conectar — se guardan solo en este navegador. Pega la URL de Apps Script para sincronizar entre computadores.';
+    el.style.color = 'var(--ink-soft)';
+  }
+}
+
+async function refreshSavedList(){
+  const sel = document.getElementById('saved-select');
+  const url = getGSUrl();
+
+  if (url) {
+    sel.innerHTML = '<option value="">Cargando...</option>';
+    try {
+      const resp = await gsGet({ action: 'list' });
+      if (resp && resp.ok) {
+        const quotes = resp.quotes.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+        sel.innerHTML = quotes.length
+          ? quotes.map(q => `<option value="${escapeHtml(q.company)}">${escapeHtml(q.company)} — ${new Date(q.savedAt).toLocaleDateString('es-ES')}</option>`).join('')
+          : '<option value="">(sin cotizaciones guardadas todavía)</option>';
+        return;
+      }
+    } catch (e) { /* si falla la red, cae al respaldo local */ }
+  }
+
+  const store = getStore();
+  const keys = Object.keys(store).sort((a, b) => (store[b].savedAt || '').localeCompare(store[a].savedAt || ''));
+  sel.innerHTML = keys.length
+    ? keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)} — ${new Date(store[k].savedAt).toLocaleDateString('es-ES')} (local)</option>`).join('')
+    : '<option value="">(sin cotizaciones guardadas todavía)</option>';
+}
+
+function setupSavedQuotes(){
+  document.getElementById('gs-url').value = getGSUrl();
+  updateSyncStatus();
+  refreshSavedList();
+
+  document.getElementById('gs-connect-btn').addEventListener('click', async () => {
+    const val = document.getElementById('gs-url').value.trim();
+    setGSUrl(val);
+    updateSyncStatus();
+    const btn = document.getElementById('gs-connect-btn');
+    const original = btn.textContent;
+    btn.textContent = 'Verificando...';
+    await refreshSavedList();
+    btn.textContent = original;
+  });
+
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const company = document.getElementById('f-company').value.trim();
+    if (!company) { alert('Escribe el nombre de la compañía antes de guardar.'); return; }
+    const state = collectRawState();
+    const btn = document.getElementById('save-btn');
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    try {
+      const url = getGSUrl();
+      if (url) {
+        const resp = await gsPost({ action: 'save', company, state });
+        if (!resp || !resp.ok) throw new Error('respuesta inválida del Sheet');
+      } else {
+        const store = getStore();
+        if (store[company] && !confirm(`Ya existe una cotización guardada como "${company}". ¿Reemplazarla?`)) { btn.disabled = false; btn.textContent = original; return; }
+        store[company] = state;
+        setStore(store);
+      }
+      await refreshSavedList();
+      document.getElementById('saved-select').value = company;
+      btn.textContent = '✓ Guardada';
+    } catch (e) {
+      alert('No se pudo guardar en el Sheet (' + e.message + '). Revisa la URL o tu conexión — por ahora se guardó solo en este navegador.');
+      const store = getStore();
+      store[company] = state;
+      setStore(store);
+      await refreshSavedList();
+      btn.textContent = original;
+    } finally {
+      setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 1500);
+    }
+  });
+
+  document.getElementById('load-btn').addEventListener('click', async () => {
+    const key = document.getElementById('saved-select').value;
+    if (!key) { alert('Selecciona una cotización guardada primero.'); return; }
+    const btn = document.getElementById('load-btn');
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Cargando...';
+    try {
+      const url = getGSUrl();
+      if (url) {
+        const resp = await gsGet({ action: 'get', company: key });
+        if (resp && resp.ok) { applyRawState(resp.state); return; }
+        throw new Error('no encontrada en el Sheet');
+      } else {
+        const store = getStore();
+        if (store[key]) { applyRawState(store[key]); return; }
+        throw new Error('no encontrada');
+      }
+    } catch (e) {
+      alert('No se pudo cargar: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = original;
+    }
+  });
+
+  document.getElementById('delete-btn').addEventListener('click', async () => {
+    const key = document.getElementById('saved-select').value;
+    if (!key) return;
+    if (!confirm(`¿Eliminar la cotización guardada de "${key}"? Esto no se puede deshacer.`)) return;
+    try {
+      const url = getGSUrl();
+      if (url) {
+        await gsPost({ action: 'delete', company: key });
+      } else {
+        const store = getStore();
+        delete store[key];
+        setStore(store);
+      }
+      await refreshSavedList();
+    } catch (e) {
+      alert('No se pudo eliminar: ' + e.message);
+    }
+  });
+
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const d = collectData();
+    const state = collectRawState();
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.download = `Borrador-${safeName(d)}.json`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  document.getElementById('import-btn').addEventListener('click', () => {
+    document.getElementById('import-file').click();
+  });
+
+  document.getElementById('import-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const state = JSON.parse(reader.result);
+        applyRawState(state);
+      } catch (err) {
+        alert('El archivo no es un borrador válido.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+}
+
+buildForm();
+renderPreview();
 
 </script>
 </body>
