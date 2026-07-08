@@ -249,7 +249,10 @@ function buildForm(){
       </div>
     </div>
     <div class="field-row single">
-      <div class="field"><select id="saved-select"></select></div>
+      <div class="field"><input id="saved-search" type="text" placeholder="🔎 Buscar cotización guardada..."></div>
+    </div>
+    <div class="field-row single">
+      <div class="field"><select id="saved-select" size="1"></select></div>
     </div>
     <div class="row-actions" style="flex-wrap:wrap;">
       <button type="button" class="btn btn-sm" id="save-btn">💾 Guardar</button>
@@ -615,6 +618,17 @@ function updateSyncStatus(){
   }
 }
 
+let savedQuotesCache = [];
+
+function renderSavedOptions(list){
+  const sel = document.getElementById('saved-select');
+  const previousValue = sel.value;
+  sel.innerHTML = list.length
+    ? list.map(q => `<option value="${escapeHtml(q.company)}">${escapeHtml(q.company)} — ${new Date(q.savedAt).toLocaleDateString('es-ES')}${q.local ? ' (local)' : ''}</option>`).join('')
+    : '<option value="">(sin resultados)</option>';
+  if (list.some(q => q.company === previousValue)) sel.value = previousValue;
+}
+
 async function refreshSavedList(){
   const sel = document.getElementById('saved-select');
   const url = getGSUrl();
@@ -624,20 +638,26 @@ async function refreshSavedList(){
     try {
       const resp = await gsGet({ action: 'list' });
       if (resp && resp.ok) {
-        const quotes = resp.quotes.sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
-        sel.innerHTML = quotes.length
-          ? quotes.map(q => `<option value="${escapeHtml(q.company)}">${escapeHtml(q.company)} — ${new Date(q.savedAt).toLocaleDateString('es-ES')}</option>`).join('')
-          : '<option value="">(sin cotizaciones guardadas todavía)</option>';
+        savedQuotesCache = resp.quotes
+          .map(q => ({ company: q.company, savedAt: q.savedAt, local: false }))
+          .sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+        applySavedSearchFilter();
         return;
       }
     } catch (e) { /* si falla la red, cae al respaldo local */ }
   }
 
   const store = getStore();
-  const keys = Object.keys(store).sort((a, b) => (store[b].savedAt || '').localeCompare(store[a].savedAt || ''));
-  sel.innerHTML = keys.length
-    ? keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)} — ${new Date(store[k].savedAt).toLocaleDateString('es-ES')} (local)</option>`).join('')
-    : '<option value="">(sin cotizaciones guardadas todavía)</option>';
+  savedQuotesCache = Object.keys(store)
+    .map(k => ({ company: k, savedAt: store[k].savedAt, local: true }))
+    .sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+  applySavedSearchFilter();
+}
+
+function applySavedSearchFilter(){
+  const q = (document.getElementById('saved-search').value || '').trim().toLowerCase();
+  const filtered = q ? savedQuotesCache.filter(item => item.company.toLowerCase().includes(q)) : savedQuotesCache;
+  renderSavedOptions(filtered);
 }
 
 function setupSavedQuotes(){
@@ -660,6 +680,8 @@ function setupSavedQuotes(){
   document.getElementById('gs-url').value = getGSUrl();
   updateSyncStatus();
   refreshSavedList();
+
+  document.getElementById('saved-search').addEventListener('input', applySavedSearchFilter);
 
   document.getElementById('gs-connect-btn').addEventListener('click', async () => {
     const val = document.getElementById('gs-url').value.trim();
