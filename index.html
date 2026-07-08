@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truemate Group | Cotización Trucking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root{
+    --navy:#0E2438;
+    --navy-2:#16324D;
+    --steel:#3E6E8E;
+    --amber:#C8963E;
+    --amber-2:#E0AF5C;
+    --paper:#F5F3EE;
+    --paper-2:#EDEAE1;
+    --ink:#1B2430;
+    --ink-soft:#5B6472;
+    --line:#DAD5C8;
+    --ok:#3E7A52;
+    --white:#FFFFFF;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.serif{font-family:'Fraunces',serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+  .hidden{display:none !important;}
+
+  .topbar{
+    background:var(--navy);color:var(--white);padding:20px 32px;
+    display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--amber);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:34px;height:34px;border-radius:50%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:var(--navy);font-size:16px;}
+  .brand-text{line-height:1.15;}
+  .brand-text .t1{font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
+  .brand-text .t2{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#B9C4CE;}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:32px;display:grid;grid-template-columns:0.95fr 1.05fr;gap:28px;align-items:start;}
+  @media(max-width:980px){.wrap{grid-template-columns:1fr;}}
+
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);}
+  .panel-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;}
+  .panel-head h2{margin:0;font-size:18px;font-weight:600;}
+  .panel-head .num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);letter-spacing:1px;}
+  .panel-body{padding:20px;max-height:calc(100vh - 130px);overflow-y:auto;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .field-row.single{grid-template-columns:1fr;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;}
+  .field input,.field select{font-family:'Inter',sans-serif;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius);font-size:13.5px;background:var(--paper);color:var(--ink);}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--steel);background:var(--white);}
+
+  .section-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy-2);margin:18px 0 8px;padding-top:14px;border-top:1px dashed var(--line);}
+  .section-title:first-child{margin-top:0;padding-top:0;border-top:none;}
+  .hint{font-size:11.5px;color:var(--ink-soft);margin:-2px 0 10px;}
+
+  .cov-row{display:grid;grid-template-columns:20px 1.3fr 1fr;gap:8px;align-items:center;margin-bottom:7px;}
+  .cov-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--amber);}
+  .cov-row input[type=text]{padding:6px 8px;font-size:12.5px;}
+
+  .pay-table{width:100%;border-collapse:collapse;margin-top:4px;}
+  .pay-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);text-align:left;padding:0 4px 5px;}
+  .pay-table td{padding:3px 4px;}
+  .pay-table input{width:100%;padding:6px 7px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius);}
+  .row-actions{display:flex;gap:8px;margin-top:8px;}
+
+  .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;padding:8px 14px;border-radius:var(--radius);border:1px solid var(--navy);background:var(--white);color:var(--navy);cursor:pointer;transition:background .15s,color .15s;}
+  .btn:hover{background:var(--navy);color:var(--white);}
+  .btn-ghost{border-color:var(--line);color:var(--ink-soft);}
+  .btn-ghost:hover{background:var(--paper-2);color:var(--ink);}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+
+  /* export toolbar */
+  .export-bar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--paper-2);}
+  .btn-export{background:var(--navy);color:var(--white);border-color:var(--navy);}
+  .btn-export:hover{background:var(--navy-2);}
+  .btn-export.amber{background:var(--amber);border-color:var(--amber);color:var(--navy);}
+  .btn-export.amber:hover{background:var(--amber-2);}
+  .btn-export.wa{background:#25D366;border-color:#25D366;color:#fff;}
+  .btn-export.wa:hover{background:#1EBE5A;}
+
+  .preview-scroll{max-height:calc(100vh - 190px);overflow-y:auto;background:var(--paper);}
+
+  /* ===== DOC (live preview / export target) ===== */
+  #doc{max-width:680px;margin:0 auto;padding:34px 26px 50px;background:var(--paper);}
+  .doc-header{text-align:center;margin-bottom:20px;}
+  .doc-header .tagline{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:6px;}
+  .doc-header .agency{font-family:'Fraunces',serif;font-weight:700;font-size:24px;color:var(--navy);}
+  .doc-header .sub{font-size:11.5px;color:var(--ink-soft);margin-top:6px;line-height:1.7;}
+  .doc-header img.logo{max-height:52px;margin-bottom:10px;}
+  .doc-rule{height:3px;background:linear-gradient(90deg,var(--navy),var(--amber));margin:16px 0 24px;border-radius:2px;}
+
+  .status-chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:20px;background:#E4F0E6;color:var(--ok);margin-bottom:14px;}
+  .doc-title{font-family:'Fraunces',serif;font-weight:600;font-size:20px;margin:0 0 3px;}
+  .doc-subtitle{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;font-style:italic;}
+
+  .company-band{background:var(--navy);color:var(--white);padding:14px 18px;border-radius:var(--radius) var(--radius) 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;}
+  .company-band .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
+  .company-band .meta{font-size:10.5px;color:#B9C4CE;font-family:'JetBrains Mono',monospace;}
+
+  .cov-card{border:1px solid var(--line);border-top:none;background:var(--white);}
+  .cov-line{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--paper-2);font-size:13px;}
+  .cov-line:last-child{border-bottom:none;}
+  .cov-line .k{color:var(--ink-soft);font-weight:500;}
+  .cov-line .v{font-weight:600;}
+  .cov-line.dp{background:#F5EEDD;}
+  .cov-line.dp .k,.cov-line.dp .v{color:var(--navy-2);font-weight:700;}
+
+  .doc-h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--navy-2);margin:24px 0 8px;}
+
+  table.sched{width:100%;border-collapse:collapse;border:1px solid var(--line);background:var(--white);}
+  table.sched th{background:var(--paper-2);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
+  table.sched td{padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--paper-2);}
+  table.sched tr:last-child td{border-bottom:none;}
+  table.sched td.num{color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:11px;}
+  table.sched td.amt{text-align:right;font-weight:600;font-family:'JetBrains Mono',monospace;}
+
+  .summary-grid{border:1px solid var(--line);background:var(--white);}
+  .summary-row{display:flex;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--paper-2);font-size:13px;}
+  .summary-row:last-child{border-bottom:none;}
+  .summary-row.total{background:#F5EEDD;font-weight:700;}
+  .summary-row .k{color:var(--ink-soft);}
+  .summary-row.total .k{color:var(--navy-2);}
+
+  .pay-methods{border:1px solid var(--line);background:var(--white);padding:16px 18px;font-size:12.5px;line-height:1.9;}
+  .pay-methods b{color:var(--navy-2);}
+
+  .doc-footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);text-align:center;line-height:1.8;}
+  .doc-footer .advisor{font-weight:700;color:var(--ink);}
+
+  .cta-wrap{margin-top:22px;text-align:center;}
+  .cta{display:inline-block;background:var(--amber);color:var(--navy);font-weight:700;padding:12px 26px;border-radius:var(--radius);text-decoration:none;font-size:13px;}
+
+  .link-box{margin:14px 20px 0;background:var(--navy);color:var(--white);border-radius:var(--radius);padding:14px 16px;}
+  .link-box .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--amber-2);margin-bottom:6px;}
+  .link-box .url{font-family:'JetBrains Mono',monospace;font-size:11.5px;word-break:break-all;background:rgba(255,255,255,.08);padding:9px 10px;border-radius:var(--radius);margin-bottom:9px;}
+  .link-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn-light{background:var(--white);border-color:var(--white);color:var(--navy);font-size:12px;padding:7px 12px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">TM</div>
+    <div class="brand-text"><div class="t1">Truemate Group</div><div class="t2">Cotización Trucking — vista en vivo</div></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="panel">
+    <div class="panel-head"><h2>Datos</h2><span class="num">01 / FORM</span></div>
+    <div class="panel-body" id="form-body"></div>
+  </div>
+
+  <div class="panel">
+    <div class="export-bar">
+      <button class="btn btn-export amber" id="pdf-btn">Descargar PDF</button>
+      <button class="btn btn-export" id="img-btn">Descargar imagen (PNG)</button>
+      <button class="btn btn-export wa" id="wa-btn">Enviar por WhatsApp</button>
+      <button class="btn btn-ghost btn-sm" id="link-btn">Generar link compartible</button>
+    </div>
+    <div id="link-box-holder"></div>
+    <div class="preview-scroll"><div id="doc"></div></div>
+  </div>
+
+</div>
+
+<script>
+const DEFAULT_COVERAGES = [
+  { on:true,  label:"Auto Liability",           value:"$1,000,000" },
+  { on:true,  label:"Motor Truck Cargo",        value:"$100,000" },
+  { on:true,  label:"Physical Damage",          value:"$45,000" },
+  { on:false, label:"General Liability",        value:"$1,000,000 / Agg $2,000,000" },
+  { on:false, label:"UM Bodily Injury",         value:"$25,000 / 50,000" },
+  { on:false, label:"Med Pay",                  value:"$5,000" },
+  { on:false, label:"Towing and Cleanup",       value:"$5,000" },
+  { on:false, label:"Trailer Interchange",      value:"$50,000" },
+  { on:false, label:"PIP",                      value:"$10,000" },
+  { on:true,  label:"Miles",                    value:"Unlimited" },
+  { on:true,  label:"Power Units",              value:"1" },
+];
+
+function b64EncodeUnicode(str){return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(m,p1)=>String.fromCharCode('0x'+p1)));}
+function fmtMoney(n){const num=parseFloat(String(n).replace(/[^0-9.\-]/g,''))||0;return '$'+num.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+buildForm();
+renderPreview();
+document.getElementById('form-body').addEventListener('input', renderPreview);
+document.getElementById('form-body').addEventListener('change', renderPreview);
+
+function buildForm(){
+  const body = document.getElementById('form-body');
+  body.innerHTML = `
+    <div class="section-title">Marca (opcional)</div>
+    <div class="hint">No es necesario — si lo dejas vacío se usa el encabezado estándar de Truemate Group.</div>
+    <div class="field-row">
+      <div class="field"><label>Frase superior</label><input id="f-tagline" type="text" placeholder="Cotización pre-aprobada"></div>
+      <div class="field"><label>Logo URL</label><input id="f-logo" type="text" placeholder="https://..."></div>
+    </div>
+
+    <div class="section-title">Compañía</div>
+    <div class="field-row">
+      <div class="field"><label>Nombre / DBA</label><input id="f-company" type="text" placeholder="BLACK ROAD TRUCKING LLC" value="BLACK ROAD TRUCKING LLC"></div>
+      <div class="field"><label>Opción / Carrier</label><input id="f-option" type="text" placeholder="Opción 1 — Rate A"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>USDOT</label><input id="f-usdot" type="text" placeholder="7010890"></div>
+      <div class="field"><label>MC</label><input id="f-mc" type="text" placeholder="MC-696268"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Fecha efectiva</label><input id="f-effdate" type="text" placeholder="07/20/2026"></div>
+      <div class="field"><label>Estado</label>
+        <select id="f-status">
+          <option value="Pending Approval">Pending Approval</option>
+          <option value="Approved">Approved</option>
+          <option value="Deferred">Deferred</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">Coberturas</div>
+    <div id="cov-list"></div>
+    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-cov">+ Agregar cobertura</button></div>
+
+    <div class="section-title">Pago inicial</div>
+    <div class="field-row">
+      <div class="field"><label>Down Payment</label><input id="f-dp" type="text" placeholder="4,958.88"></div>
+      <div class="field"><label>Per unit (opcional)</label><input id="f-dpunit" type="text" placeholder="1,412.30"></div>
+    </div>
+
+    <div class="section-title">Calendario de pagos</div>
+    <table class="pay-table" id="pay-table">
+      <thead><tr><th style="width:26px">#</th><th>Fecha</th><th>Monto</th><th></th></tr></thead>
+      <tbody id="pay-body"></tbody>
+    </table>
+    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button></div>
+
+    <div class="section-title">Resumen</div>
+    <div class="field-row">
+      <div class="field"><label>Down Payment Full</label><input id="f-dpfull" type="text" placeholder="4,958.88"></div>
+      <div class="field"><label>Initial Payment</label><input id="f-init" type="text" placeholder="1,800.00"></div>
+    </div>
+    <div class="field-row single">
+      <div class="field"><label>Balance</label><input id="f-balance" type="text" placeholder="3,158.88"></div>
+    </div>
+
+    <div class="section-title">Asesor</div>
+    <div class="field-row">
+      <div class="field"><label>Nombre</label><input id="f-advisor" type="text" placeholder="Andres Guisao" value="Andres Guisao"></div>
+      <div class="field"><label>WhatsApp (solo números)</label><input id="f-wa" type="text" placeholder="13212481894" value="13212481894"></div>
+    </div>
+  `;
+  DEFAULT_COVERAGES.forEach(c => addCovRow(c));
+  addPayRow(); addPayRow(); addPayRow();
+  document.getElementById('add-cov').addEventListener('click', () => { addCovRow({on:true,label:"",value:""}); renderPreview(); });
+  document.getElementById('add-pay').addEventListener('click', () => { addPayRow(); renderPreview(); });
+}
+
+function addCovRow(c){
+  const list = document.getElementById('cov-list');
+  const row = document.createElement('div');
+  row.className = 'cov-row';
+  row.innerHTML = `<input type="checkbox" class="cov-on" ${c.on?'checked':''}><input type="text" class="cov-label" placeholder="Cobertura" value="${c.label||''}"><input type="text" class="cov-value" placeholder="Valor" value="${c.value||''}">`;
+  list.appendChild(row);
+}
+function addPayRow(date='', amount=''){
+  const tbody = document.getElementById('pay-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="mono" style="color:var(--ink-soft);font-size:11px;">${tbody.children.length+1}</td><td><input type="text" class="pay-date" placeholder="MM/DD/YYYY" value="${date}"></td><td><input type="text" class="pay-amount" placeholder="0.00" value="${amount}"></td><td><button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('tr').remove();renderPreview();">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function collectData(){
+  const covs = [...document.querySelectorAll('.cov-row')].map(r => ({
+    on: r.querySelector('.cov-on').checked,
+    label: r.querySelector('.cov-label').value.trim(),
+    value: r.querySelector('.cov-value').value.trim(),
+  })).filter(c => c.on && c.label);
+  const payments = [...document.querySelectorAll('#pay-body tr')].map(r => ({
+    date: r.querySelector('.pay-date').value.trim(),
+    amount: r.querySelector('.pay-amount').value.trim(),
+  })).filter(p => p.date || p.amount);
+  return {
+    tagline: document.getElementById('f-tagline').value.trim(),
+    logo: document.getElementById('f-logo').value.trim(),
+    company: document.getElementById('f-company').value.trim() || 'CLIENTE',
+    option: document.getElementById('f-option').value.trim(),
+    usdot: document.getElementById('f-usdot').value.trim(),
+    mc: document.getElementById('f-mc').value.trim(),
+    effdate: document.getElementById('f-effdate').value.trim(),
+    status: document.getElementById('f-status').value,
+    covs,
+    dp: document.getElementById('f-dp').value.trim(),
+    dpunit: document.getElementById('f-dpunit').value.trim(),
+    payments,
+    dpfull: document.getElementById('f-dpfull').value.trim(),
+    init: document.getElementById('f-init').value.trim(),
+    balance: document.getElementById('f-balance').value.trim(),
+    advisor: document.getElementById('f-advisor').value.trim() || 'Truemate Group LLC',
+    wa: document.getElementById('f-wa').value.trim(),
+  };
+}
+
+function renderPreview(){
+  const d = collectData();
+  const doc = document.getElementById('doc');
+
+  const statusMap = {
+    'Pending Approval': {label:'Pending Approval', bg:'#FCEFD8', color:'#8A5A16'},
+    'Approved': {label:'Approved', bg:'#E4F0E6', color:'#3E7A52'},
+    'Deferred': {label:'Deferred', bg:'#F0E6F5', color:'#6B3E8A'},
+  };
+  const st = statusMap[d.status] || statusMap['Pending Approval'];
+
+  const covHtml = (d.covs||[]).map(c => `<div class="cov-line"><span class="k">${escapeHtml(c.label)}</span><span class="v">${escapeHtml(c.value)}</span></div>`).join('')
+    + (d.dp ? `<div class="cov-line dp"><span class="k">Down Payment</span><span class="v">${fmtMoney(d.dp)}${d.dpunit?` <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(Per unit ${fmtMoney(d.dpunit)})</span>`:''}</span></div>` : '');
+
+  const schedHtml = (d.payments||[]).length ? `
+    <div class="doc-h2">Calendario de pagos automáticos</div>
+    <table class="sched"><thead><tr><th style="width:34px">#</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead>
+    <tbody>${d.payments.map((p,i)=>`<tr><td class="num">${i+1}</td><td>${escapeHtml(p.date)}</td><td class="amt">${fmtMoney(p.amount)}</td></tr>`).join('')}</tbody></table>` : '';
+
+  const summaryHtml = (d.dpfull || d.init || d.balance) ? `
+    <div class="doc-h2">Resumen</div>
+    <div class="summary-grid">
+      ${d.dpfull?`<div class="summary-row"><span class="k">Down Payment Full</span><span>${fmtMoney(d.dpfull)}</span></div>`:''}
+      ${d.init?`<div class="summary-row"><span class="k">Initial Payment</span><span>${fmtMoney(d.init)}</span></div>`:''}
+      ${d.balance?`<div class="summary-row total"><span class="k">Balance</span><span>${fmtMoney(d.balance)}</span></div>`:''}
+    </div>` : '';
+
+  doc.innerHTML = `
+    <div class="doc-header">
+      ${d.logo ? `<img class="logo" src="${escapeHtml(d.logo)}" onerror="this.style.display='none'">` : ''}
+      ${d.tagline ? `<div class="tagline">${escapeHtml(d.tagline)}</div>` : ''}
+      <div class="agency">Truemate Group LLC</div>
+      <div class="sub">Insurance Agency · 504 Plant St. Ste 201, Winter Garden, FL 34787<br>Ph +1 (321) 248-1894 · WhatsApp +1 (689) 788-2134 · www.truemategroup.com</div>
+    </div>
+    <div class="doc-rule"></div>
+    <span class="status-chip" style="background:${st.bg};color:${st.color};">${st.label}</span>
+    <h1 class="doc-title">Cotización de Seguro — Trucking</h1>
+    ${d.option ? `<p class="doc-subtitle">${escapeHtml(d.option)}</p>` : ''}
+    <div class="company-band">
+      <div class="name">${escapeHtml(d.company)}</div>
+      <div class="meta">${d.usdot?'USDOT '+escapeHtml(d.usdot):''} ${d.mc?'&nbsp;&nbsp;MC '+escapeHtml(d.mc):''} ${d.effdate?'&nbsp;&nbsp;Efectiva '+escapeHtml(d.effdate):''}</div>
+    </div>
+    <div class="cov-card">${covHtml}</div>
+    ${schedHtml}
+    ${summaryHtml}
+    <div class="doc-h2">Métodos de pago</div>
+    <div class="pay-methods">
+      <b>Tarjeta de Crédito / Débito:</b> disponible previa autorización (+0.3%)<br>
+      <b>Zelle:</b> gregorio.navarro@truemategroup.com<br>
+      <b>Wire Transfer:</b> J.P. Morgan Chase Bank — Truemate Group LLC DBA GlobalGreen Insurance Agency<br>
+      Cuenta 2906971058 · Routing 267084131
+    </div>
+    <div class="cta-wrap">
+      <a class="cta" href="https://wa.me/${d.wa||'13212481894'}?text=${encodeURIComponent('Hola, confirmo mi cotización de '+d.company+'. ¿Cómo procedo con el pago?')}" target="_blank">Confirmar y activar póliza →</a>
+    </div>
+    <div class="doc-footer">
+      Por favor, una vez realizado el pago, envíanos el comprobante para proceder con la activación correspondiente.<br><br>
+      <span class="advisor">${escapeHtml(d.advisor)}</span><br>Operations & Support Team — Truemate Group LLC
+    </div>
+  `;
+}
+
+/* ===== export actions ===== */
+document.getElementById('pdf-btn').addEventListener('click', () => {
+  const d = collectData();
+  const el = document.getElementById('doc');
+  const opt = {
+    margin: 0,
+    filename: `Cotizacion-${(d.company||'cliente').replace(/[^a-z0-9]+/gi,'-')}.pdf`,
+    image: { type:'jpeg', quality:0.98 },
+    html2canvas: { scale:2, backgroundColor:'#F5F3EE' },
+    jsPDF: { unit:'pt', format:'letter', orientation:'portrait' }
+  };
+  html2pdf().set(opt).from(el).save();
+});
+
+document.getElementById('img-btn').addEventListener('click', () => {
+  const d = collectData();
+  const el = document.getElementById('doc');
+  html2canvas(el, { scale:2, backgroundColor:'#F5F3EE' }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `Cotizacion-${(d.company||'cliente').replace(/[^a-z0-9]+/gi,'-')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+});
+
+document.getElementById('wa-btn').addEventListener('click', () => {
+  const d = collectData();
+  const msg = `¡Hola! 👋 Te comparto la cotización de *${d.company}* preparada por Truemate Group. Adjunto el PDF/imagen a continuación. Quedamos atentos a cualquier duda. ✅`;
+  const wa = d.wa ? `https://wa.me/${d.wa}?text=` : 'https://wa.me/?text=';
+  window.open(wa + encodeURIComponent(msg), '_blank');
+});
+
+document.getElementById('link-btn').addEventListener('click', () => {
+  const d = collectData();
+  const encoded = b64EncodeUnicode(JSON.stringify(d));
+  const url = location.href.split('?')[0] + '?view=client&d=' + encoded;
+  const holder = document.getElementById('link-box-holder');
+  holder.innerHTML = `
+    <div class="link-box">
+      <div class="lbl">Link generado</div>
+      <div class="url">${url}</div>
+      <div class="link-actions">
+        <button class="btn btn-light" id="copy-link">Copiar link</button>
+        <button class="btn btn-light" id="open-link">Abrir</button>
+      </div>
+    </div>`;
+  document.getElementById('copy-link').onclick = () => { navigator.clipboard.writeText(url); document.getElementById('copy-link').textContent='✓ Copiado'; };
+  document.getElementById('open-link').onclick = () => window.open(url,'_blank');
+});
+</script>
+</body>
+</html>
