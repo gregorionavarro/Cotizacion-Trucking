@@ -355,6 +355,9 @@ function buildForm(){
       <div class="field"><select id="saved-select" size="1"></select></div>
     </div>
     <div class="row-actions" style="flex-wrap:wrap;">
+      <button type="button" class="btn btn-sm" id="new-quote-btn" style="background:var(--amber);border-color:var(--amber);color:var(--navy);font-weight:700;">🆕 Nueva cotización</button>
+    </div>
+    <div class="row-actions" style="flex-wrap:wrap;">
       <button type="button" class="btn btn-sm" id="save-btn">💾 Guardar</button>
       <button type="button" class="btn btn-ghost btn-sm" id="load-btn">Cargar</button>
       <button type="button" class="btn btn-ghost btn-sm" id="delete-btn">Eliminar</button>
@@ -793,7 +796,35 @@ function applySavedSearchFilter(){
   renderSavedOptions(filtered);
 }
 
+const RESET_FIELD_VALUES = {
+  'f-company': '', 'f-option': '', 'f-usdot': '', 'f-mc': '',
+  'f-effdate': '', 'f-client-phone': '', 'f-dp': '', 'f-dpunit': '',
+  'f-init': '', 'f-balance': '',
+  'f-benefits': 'COI / Certificate Holder (10 min)  ·  Executive Representation 24/7  ·  DOT/FMCSA Compliance Assistance  ·  Assisted USDOT/MC Renewal  ·  24/7 Claims Support',
+};
+
+function resetForm(){
+  Object.entries(RESET_FIELD_VALUES).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  document.getElementById('f-status').value = 'Pending Approval';
+  document.getElementById('cov-list').innerHTML = '';
+  DEFAULT_COVERAGES.forEach(c => addCovRow(c));
+  document.getElementById('pay-body').innerHTML = '';
+  addPayRow(); addPayRow(); addPayRow();
+  document.getElementById('saved-search').value = '';
+  applySavedSearchFilter();
+  renderPreview();
+}
+
 function setupSavedQuotes(){
+  document.getElementById('new-quote-btn').addEventListener('click', () => {
+    if (confirm('¿Empezar una cotización nueva? Se va a limpiar todo lo que no hayas guardado.')) {
+      resetForm();
+    }
+  });
+
   const ACCESS_CODE = '5093';
   document.getElementById('gs-config-toggle').addEventListener('click', () => {
     const panel = document.getElementById('gs-config-panel');
