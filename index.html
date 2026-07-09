@@ -126,7 +126,7 @@
   table.sched td{padding:6px 12px;font-size:12px;border-bottom:1px solid var(--paper-2);}
   table.sched tr:last-child td{border-bottom:none;}
   table.sched td.num{color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:11px;}
-  table.sched td.amt{text-align:right;font-weight:600;font-family:'JetBrains Mono',monospace;}
+  table.sched td.amt{text-align:right;font-weight:700;font-family:'Inter',sans-serif;font-variant-numeric:tabular-nums;}
 
   .summary-grid{border:1px solid var(--line);background:var(--white);}
   .summary-row{display:flex;justify-content:space-between;padding:7px 16px;border-bottom:1px solid var(--paper-2);font-size:12.5px;}
@@ -416,12 +416,13 @@ function buildForm(){
     <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button><button type="button" class="btn btn-ghost btn-sm" id="autofill-dates-btn">📅 Autocompletar fechas mensuales</button></div>
 
     <div class="section-title">Resumen</div>
+    <div class="hint">Balance se calcula solo: Down Payment Full − Initial Payment.</div>
     <div class="field-row">
       <div class="field"><label>Down Payment Full</label><input id="f-dpfull" type="text" disabled placeholder="se copia de Pago inicial"></div>
       <div class="field"><label>Initial Payment</label><input id="f-init" type="text" placeholder="1,800.00"></div>
     </div>
     <div class="field-row single">
-      <div class="field"><label>Balance</label><input id="f-balance" type="text" placeholder="3,158.88"></div>
+      <div class="field"><label>Balance</label><input id="f-balance" type="text" disabled placeholder="se calcula solo"></div>
     </div>
   `;
   DEFAULT_COVERAGES.forEach(c => addCovRow(c));
@@ -484,9 +485,19 @@ function collectData(){
     amount: r.querySelector('.pay-amount').value.trim(),
   })).filter(p => p.date || p.amount);
   const dp = document.getElementById('f-dp').value.trim();
+  const initRaw = document.getElementById('f-init').value.trim();
 
   const dpfullField = document.getElementById('f-dpfull');
   dpfullField.value = dp;
+
+  const balanceField = document.getElementById('f-balance');
+  let balanceStr = '';
+  if (dp || initRaw) {
+    const dpNum = parseMoneyInput(dp) || 0;
+    const initNum = parseMoneyInput(initRaw) || 0;
+    balanceStr = formatAsMoney(String(Math.max(0, dpNum - initNum)));
+  }
+  balanceField.value = balanceStr;
 
   return {
     company: document.getElementById('f-company').value.trim() || 'CLIENTE',
@@ -501,8 +512,8 @@ function collectData(){
     dpunit: document.getElementById('f-dpunit').value.trim(),
     payments,
     dpfull: dp,
-    init: document.getElementById('f-init').value.trim(),
-    balance: document.getElementById('f-balance').value.trim(),
+    init: initRaw,
+    balance: balanceStr,
     clientPhone: document.getElementById('f-client-phone').value.trim(),
     lang: currentLang,
   };
