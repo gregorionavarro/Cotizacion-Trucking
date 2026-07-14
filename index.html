@@ -75,6 +75,7 @@
   .calc-box .calc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:8px;}
   .comp-row{display:grid;grid-template-columns:1.3fr 1fr 26px;gap:8px;align-items:center;margin-bottom:6px;}
   .comp-row input{padding:6px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius);}
+  .comp-row input:disabled{background:var(--paper-2);color:var(--ink-soft);font-weight:600;}
   .calc-total{margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:var(--paper-2);padding:8px 10px;border-radius:var(--radius);font-size:12.5px;font-weight:700;color:var(--navy-2);}
   .calc-total .amt{font-family:'JetBrains Mono',monospace;}
   .calc-apply{margin-top:8px;width:100%;}
@@ -410,10 +411,6 @@ function buildForm(){
 
     <div class="section-title">Pago inicial</div>
     <div class="hint">El Down Payment se refleja automáticamente en el Resumen — no hace falta escribirlo dos veces.</div>
-    <div class="field-row">
-      <div class="field"><label>Down Payment</label><input id="f-dp" type="text" placeholder="4,958.88"></div>
-      <div class="field"><label>Per unit (opcional)</label><input id="f-dpunit" type="text" placeholder="1,412.30"></div>
-    </div>
     <div class="calc-box">
       <div class="calc-title">Calculadora — si son 2+ aseguradoras, súmalas aquí</div>
       <div id="dp-components"></div>
@@ -421,14 +418,13 @@ function buildForm(){
       <div class="calc-total"><span>Suma total</span><span class="amt" id="dp-calc-total">$0</span></div>
       <button type="button" class="btn calc-apply" id="dp-apply-btn">↓ Usar esta suma como Down Payment</button>
     </div>
+    <div class="field-row">
+      <div class="field"><label>Down Payment</label><input id="f-dp" type="text" placeholder="4,958.88"></div>
+      <div class="field"><label>Per unit (opcional)</label><input id="f-dpunit" type="text" placeholder="1,412.30"></div>
+    </div>
 
     <div class="section-title">Calendario de pagos</div>
     <div class="hint">Escribe la fecha del pago #1 y usa "Autocompletar fechas" para llenar el resto sumando un mes cada vez.</div>
-    <table class="pay-table" id="pay-table">
-      <thead><tr><th style="width:26px">#</th><th>Fecha</th><th>Monto</th><th></th></tr></thead>
-      <tbody id="pay-body"></tbody>
-    </table>
-    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button><button type="button" class="btn btn-ghost btn-sm" id="autofill-dates-btn">📅 Autocompletar fechas mensuales</button></div>
     <div class="calc-box">
       <div class="calc-title">Calculadora de cuota mensual — si son 2+ aseguradoras, súmalas aquí</div>
       <div id="pay-components"></div>
@@ -436,6 +432,11 @@ function buildForm(){
       <div class="calc-total"><span>Cuota mensual total</span><span class="amt" id="pay-calc-total">$0</span></div>
       <button type="button" class="btn calc-apply" id="pay-apply-btn">💲 Autocompletar pagos (aplica a todas las cuotas)</button>
     </div>
+    <table class="pay-table" id="pay-table">
+      <thead><tr><th style="width:26px">#</th><th>Fecha</th><th>Monto</th><th></th></tr></thead>
+      <tbody id="pay-body"></tbody>
+    </table>
+    <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button><button type="button" class="btn btn-ghost btn-sm" id="autofill-dates-btn">📅 Autocompletar fechas mensuales</button></div>
 
     <div class="section-title">Resumen</div>
     <div class="hint">Balance se calcula solo: Down Payment Full − Initial Payment.</div>
@@ -456,16 +457,18 @@ function buildForm(){
   setupSavedQuotes();
 }
 
-function addComponentRow(containerId, label, value){
+function addComponentRow(containerId, label, value, locked){
   const container = document.getElementById(containerId);
   const row = document.createElement('div');
   row.className = 'comp-row';
   row.innerHTML = `
-    <input type="text" class="comp-label" placeholder="Aseguradora 1" value="${label || ''}">
+    <input type="text" class="comp-label" placeholder="Aseguradora 1" value="${label || ''}" ${locked ? 'disabled' : ''}>
     <input type="text" class="comp-value" placeholder="0.00" value="${value || ''}">
-    <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 8px;">✕</button>
+    ${locked ? '<span></span>' : '<button type="button" class="btn btn-ghost btn-sm" style="padding:4px 8px;">✕</button>'}
   `;
-  row.querySelector('button').addEventListener('click', () => { row.remove(); updateCalcTotals(); });
+  if (!locked) {
+    row.querySelector('button').addEventListener('click', () => { row.remove(); updateCalcTotals(); });
+  }
   container.appendChild(row);
 }
 
@@ -482,6 +485,7 @@ function updateCalcTotals(){
 }
 
 function setupComponentCalculators(){
+  addComponentRow('dp-components', 'Fee Producer', '', true);
   addComponentRow('dp-components', 'Aseguradora 1', '');
   addComponentRow('dp-components', 'Aseguradora 2', '');
   addComponentRow('pay-components', 'Aseguradora 1', '');
