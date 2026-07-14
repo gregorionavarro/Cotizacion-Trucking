@@ -71,6 +71,13 @@
   .pay-table td{padding:3px 4px;}
   .pay-table input{width:100%;padding:6px 7px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius);}
   .row-actions{display:flex;gap:8px;margin-top:8px;}
+  .calc-box{background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);padding:12px 14px;margin-top:10px;}
+  .calc-box .calc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .comp-row{display:grid;grid-template-columns:1.3fr 1fr 26px;gap:8px;align-items:center;margin-bottom:6px;}
+  .comp-row input{padding:6px 8px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius);}
+  .calc-total{margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:var(--paper-2);padding:8px 10px;border-radius:var(--radius);font-size:12.5px;font-weight:700;color:var(--navy-2);}
+  .calc-total .amt{font-family:'JetBrains Mono',monospace;}
+  .calc-apply{margin-top:8px;width:100%;}
 
   .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;padding:8px 14px;border-radius:var(--radius);border:1px solid var(--navy);background:var(--white);color:var(--navy);cursor:pointer;transition:background .15s,color .15s;}
   .btn:hover{background:var(--navy);color:var(--white);}
@@ -261,7 +268,7 @@ const DEFAULT_COVERAGES = [
 function fmtMoney(n){const num=parseFloat(String(n).replace(/[^0-9.\-]/g,''))||0;return '$'+num.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-document.getElementById('form-body').addEventListener('input', renderPreview);
+document.getElementById('form-body').addEventListener('input', () => { renderPreview(); updateCalcTotals(); });
 document.getElementById('form-body').addEventListener('change', renderPreview);
 document.getElementById('form-body').addEventListener('focusout', (e) => {
   const t = e.target;
@@ -275,13 +282,14 @@ document.getElementById('form-body').addEventListener('focusout', (e) => {
     if (!label.includes('miles') && !label.includes('unit')) shouldFormat = true;
   } else if (MONEY_FIELD_IDS.includes(t.id)) {
     shouldFormat = true;
-  } else if (t.classList && t.classList.contains('pay-amount')) {
+  } else if (t.classList && (t.classList.contains('pay-amount') || t.classList.contains('comp-value'))) {
     shouldFormat = true;
   }
 
   if (shouldFormat && looksLikePlainAmount(t.value)) {
     t.value = formatAsMoney(t.value);
     renderPreview();
+    updateCalcTotals();
   }
 });
 
@@ -406,6 +414,13 @@ function buildForm(){
       <div class="field"><label>Down Payment</label><input id="f-dp" type="text" placeholder="4,958.88"></div>
       <div class="field"><label>Per unit (opcional)</label><input id="f-dpunit" type="text" placeholder="1,412.30"></div>
     </div>
+    <div class="calc-box">
+      <div class="calc-title">Calculadora — si son 2+ aseguradoras, súmalas aquí</div>
+      <div id="dp-components"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="dp-add-component">+ Agregar componente</button>
+      <div class="calc-total"><span>Suma total</span><span class="amt" id="dp-calc-total">$0</span></div>
+      <button type="button" class="btn calc-apply" id="dp-apply-btn">↓ Usar esta suma como Down Payment</button>
+    </div>
 
     <div class="section-title">Calendario de pagos</div>
     <div class="hint">Escribe la fecha del pago #1 y usa "Autocompletar fechas" para llenar el resto sumando un mes cada vez.</div>
@@ -414,6 +429,13 @@ function buildForm(){
       <tbody id="pay-body"></tbody>
     </table>
     <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-pay">+ Agregar pago</button><button type="button" class="btn btn-ghost btn-sm" id="autofill-dates-btn">📅 Autocompletar fechas mensuales</button></div>
+    <div class="calc-box">
+      <div class="calc-title">Calculadora de cuota mensual — si son 2+ aseguradoras, súmalas aquí</div>
+      <div id="pay-components"></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="pay-add-component">+ Agregar componente</button>
+      <div class="calc-total"><span>Cuota mensual total</span><span class="amt" id="pay-calc-total">$0</span></div>
+      <button type="button" class="btn calc-apply" id="pay-apply-btn">💲 Autocompletar pagos (aplica a todas las cuotas)</button>
+    </div>
 
     <div class="section-title">Resumen</div>
     <div class="hint">Balance se calcula solo: Down Payment Full − Initial Payment.</div>
@@ -430,7 +452,59 @@ function buildForm(){
   document.getElementById('add-cov').addEventListener('click', () => { addCovRow({on:true,label:"",value:""}); renderPreview(); });
   document.getElementById('add-pay').addEventListener('click', () => { addPayRow(); renderPreview(); });
   document.getElementById('autofill-dates-btn').addEventListener('click', autofillMonthlyDates);
+  setupComponentCalculators();
   setupSavedQuotes();
+}
+
+function addComponentRow(containerId, label, value){
+  const container = document.getElementById(containerId);
+  const row = document.createElement('div');
+  row.className = 'comp-row';
+  row.innerHTML = `
+    <input type="text" class="comp-label" placeholder="Aseguradora 1" value="${label || ''}">
+    <input type="text" class="comp-value" placeholder="0.00" value="${value || ''}">
+    <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 8px;">✕</button>
+  `;
+  row.querySelector('button').addEventListener('click', () => { row.remove(); updateCalcTotals(); });
+  container.appendChild(row);
+}
+
+function sumComponents(containerId){
+  return [...document.querySelectorAll('#' + containerId + ' .comp-value')]
+    .reduce((sum, el) => sum + (parseMoneyInput(el.value) || 0), 0);
+}
+
+function updateCalcTotals(){
+  const dpTotal = sumComponents('dp-components');
+  document.getElementById('dp-calc-total').textContent = formatAsMoney(String(dpTotal));
+  const payTotal = sumComponents('pay-components');
+  document.getElementById('pay-calc-total').textContent = formatAsMoney(String(payTotal));
+}
+
+function setupComponentCalculators(){
+  addComponentRow('dp-components', 'Aseguradora 1', '');
+  addComponentRow('dp-components', 'Aseguradora 2', '');
+  addComponentRow('pay-components', 'Aseguradora 1', '');
+  addComponentRow('pay-components', 'Aseguradora 2', '');
+  updateCalcTotals();
+
+  document.getElementById('dp-add-component').addEventListener('click', () => { addComponentRow('dp-components'); updateCalcTotals(); });
+  document.getElementById('pay-add-component').addEventListener('click', () => { addComponentRow('pay-components'); updateCalcTotals(); });
+
+  document.getElementById('dp-apply-btn').addEventListener('click', () => {
+    const total = sumComponents('dp-components');
+    document.getElementById('f-dp').value = formatAsMoney(String(total));
+    renderPreview();
+  });
+
+  document.getElementById('pay-apply-btn').addEventListener('click', () => {
+    const total = sumComponents('pay-components');
+    const formatted = formatAsMoney(String(total));
+    const rows = document.querySelectorAll('#pay-body .pay-amount');
+    if (!rows.length) { alert('Primero agrega al menos una fila en el calendario de pagos.'); return; }
+    rows.forEach(el => { el.value = formatted; });
+    renderPreview();
+  });
 }
 
 function parseDateMMDDYYYY(s){
