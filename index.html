@@ -196,6 +196,8 @@ let currentLang = 'en';
 const I18N = {
   es: {
     quoteTitle: 'Cotización de Seguro — Trucking',
+    quoteTitleAuto: 'Cotización de Seguro — Auto Comercial',
+    quotedVehicles: 'Vehículos Cotizados',
     downPayment: 'Down Payment',
     perUnit: 'Per unit',
     benefitsIncluded: 'Beneficios incluidos',
@@ -223,6 +225,8 @@ const I18N = {
   },
   en: {
     quoteTitle: 'Insurance Quote — Trucking',
+    quoteTitleAuto: 'Insurance Quote — Commercial Auto',
+    quotedVehicles: 'Quoted Vehicles',
     downPayment: 'Down Payment',
     perUnit: 'Per unit',
     benefitsIncluded: 'Included Benefits',
@@ -265,6 +269,25 @@ const DEFAULT_COVERAGES = [
   { on:false, label:"Accident Insurance (Cigna Choice)", value:"$4,000 - $10,000" },
   { on:false, label:"Term Life Insurance", value:"$250,000" },
 ];
+
+const AUTO_COVERAGES = [
+  { on:true,  label:"Auto Liability",                                     value:"$1,000,000" },
+  { on:false, label:"Bodily Injury Liability/Property Damage (BI/PD)",    value:"BI $100,000/$300,000 — PD $50,000" },
+  { on:false, label:"Uninsured Motorist Bodily Injury (includes Underinsured) (UM/UIM)", value:"$100,000/$300,000" },
+  { on:false, label:"Is Stacked",                                        value:"No" },
+  { on:false, label:"Medical Payments (MED)",                            value:"$5,000" },
+  { on:false, label:"Personal Injury Protection (PIP)",                  value:"$10,000" },
+  { on:false, label:"PIP Options",                                       value:"Standard" },
+  { on:false, label:"Excluded Work Loss",                                value:"N/A" },
+  { on:true,  label:"Comprehensive (COMP)",                              value:"$500 deductible" },
+  { on:true,  label:"Collision (COLL)",                                  value:"$1,000 deductible" },
+  { on:false, label:"Emergency Roadside Service (ERS)",                  value:"Included" },
+  { on:false, label:"Rental Reimbursement (RR)",                         value:"$50/day - 30 days max" },
+  { on:false, label:"Accident Insurance (Cigna Choice)",                 value:"$4,000 - $10,000" },
+  { on:false, label:"Term Life Insurance",                               value:"$250,000" },
+];
+
+let quoteType = 'trucking';
 
 function fmtMoney(n){const num=parseFloat(String(n).replace(/[^0-9.\-]/g,''))||0;return '$'+num.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
@@ -375,6 +398,12 @@ function buildForm(){
       <input type="file" id="import-file" accept=".json" class="hidden">
     </div>
 
+    <div class="section-title">Tipo de cotización</div>
+    <div class="row-actions" style="flex-wrap:wrap;">
+      <button type="button" class="btn btn-sm" id="type-trucking-btn">🚚 Trucking</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="type-auto-btn">🚗 Commercial Auto</button>
+    </div>
+
     <div class="section-title">Compañía</div>
     <div class="field-row">
       <div class="field"><label>Nombre / DBA</label><input id="f-company" type="text" placeholder="BLACK ROAD TRUCKING LLC" value="BLACK ROAD TRUCKING LLC"></div>
@@ -398,8 +427,15 @@ function buildForm(){
       <div class="field"><label>Teléfono del cliente (WhatsApp, solo números)</label><input id="f-client-phone" type="text" placeholder="13051234567"></div>
     </div>
 
+    <div id="vehicles-section" class="hidden">
+      <div class="section-title">Vehículos cotizados</div>
+      <div class="hint">Ej. 2025 TOYOTA RAV4 — uno por línea, agrega los que necesites.</div>
+      <div id="vehicle-list"></div>
+      <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-vehicle">+ Agregar vehículo</button></div>
+    </div>
+
     <div class="section-title">Coberturas</div>
-    <div class="hint">Auto Liability, MTC, Physical Damage... y también Accidentes/Vida están aquí abajo, al final de la lista.</div>
+    <div class="hint" id="cov-hint">Auto Liability, MTC, Physical Damage... y también Accidentes/Vida están aquí abajo, al final de la lista.</div>
     <div id="cov-list"></div>
     <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" id="add-cov">+ Agregar cobertura</button></div>
 
@@ -453,8 +489,57 @@ function buildForm(){
   document.getElementById('add-cov').addEventListener('click', () => { addCovRow({on:true,label:"",value:""}); renderPreview(); });
   document.getElementById('add-pay').addEventListener('click', () => { addPayRow(); renderPreview(); });
   document.getElementById('autofill-dates-btn').addEventListener('click', autofillMonthlyDates);
+  document.getElementById('add-vehicle').addEventListener('click', () => { addVehicleRow(); renderPreview(); });
+  document.getElementById('type-trucking-btn').addEventListener('click', () => setQuoteType('trucking', true));
+  document.getElementById('type-auto-btn').addEventListener('click', () => setQuoteType('auto', true));
   setupComponentCalculators();
   setupSavedQuotes();
+}
+
+function addVehicleRow(value){
+  const container = document.getElementById('vehicle-list');
+  const row = document.createElement('div');
+  row.className = 'cov-row';
+  row.style.gridTemplateColumns = '1fr 26px';
+  row.innerHTML = `
+    <input type="text" class="vehicle-value" placeholder="2025 TOYOTA RAV4" value="${value || ''}">
+    <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 8px;">✕</button>
+  `;
+  row.querySelector('button').addEventListener('click', () => { row.remove(); renderPreview(); });
+  container.appendChild(row);
+}
+
+function setQuoteType(type, rebuildCoverages){
+  quoteType = type;
+  const truckBtn = document.getElementById('type-trucking-btn');
+  const autoBtn = document.getElementById('type-auto-btn');
+  const vehiclesSection = document.getElementById('vehicles-section');
+  const covHint = document.getElementById('cov-hint');
+
+  if (type === 'auto') {
+    truckBtn.classList.add('btn-ghost');
+    autoBtn.classList.remove('btn-ghost');
+    vehiclesSection.classList.remove('hidden');
+    covHint.textContent = 'COMP, COLL, ERS, RR... y también Accidentes/Vida están aquí abajo, al final de la lista.';
+  } else {
+    autoBtn.classList.add('btn-ghost');
+    truckBtn.classList.remove('btn-ghost');
+    vehiclesSection.classList.add('hidden');
+    covHint.textContent = 'Auto Liability, MTC, Physical Damage... y también Accidentes/Vida están aquí abajo, al final de la lista.';
+  }
+
+  if (rebuildCoverages) {
+    if (!confirm('¿Cambiar el tipo de cotización? Esto reemplaza las coberturas actuales por las del nuevo tipo.')) {
+      // revertir visualmente si cancela
+      quoteType = (type === 'auto') ? 'trucking' : 'auto';
+      setQuoteType(quoteType, false);
+      return;
+    }
+    document.getElementById('cov-list').innerHTML = '';
+    const list = type === 'auto' ? AUTO_COVERAGES : DEFAULT_COVERAGES;
+    list.forEach(c => addCovRow(c));
+  }
+  renderPreview();
 }
 
 function addComponentRow(containerId, label, value, locked){
@@ -558,6 +643,9 @@ function collectData(){
     label: r.querySelector('.cov-label').value.trim(),
     value: r.querySelector('.cov-value').value.trim(),
   })).filter(c => c.on && c.label);
+  const vehicles = [...document.querySelectorAll('#vehicle-list .vehicle-value')]
+    .map(el => el.value.trim())
+    .filter(Boolean);
   const payments = [...document.querySelectorAll('#pay-body tr')].map(r => ({
     date: r.querySelector('.pay-date').value.trim(),
     amount: r.querySelector('.pay-amount').value.trim(),
@@ -584,6 +672,8 @@ function collectData(){
     mc: document.getElementById('f-mc').value.trim(),
     effdate: document.getElementById('f-effdate').value.trim(),
     status: document.getElementById('f-status').value,
+    quoteType,
+    vehicles,
     covs,
     benefits: document.getElementById('f-benefits').value.trim(),
     dp,
@@ -612,6 +702,10 @@ function renderPreview(){
   const covHtml = (d.covs||[]).map(c => `<div class="cov-line"><span class="k">${escapeHtml(c.label)}</span><span class="v">${escapeHtml(c.value)}</span></div>`).join('')
     + (d.dp ? `<div class="cov-line dp"><span class="k">${t.downPayment}</span><span class="v">${fmtMoney(d.dp)}${d.dpunit?` <span style="font-weight:400;color:var(--ink-soft);font-size:11px;">(${t.perUnit} ${fmtMoney(d.dpunit)})</span>`:''}</span></div>` : '');
 
+  const vehiclesHtml = (d.quoteType === 'auto' && (d.vehicles||[]).length) ? `
+    <div class="doc-h2">${t.quotedVehicles}</div>
+    <div class="cov-card">${d.vehicles.map(v=>`<div class="cov-line"><span class="k">${escapeHtml(v)}</span><span class="v"></span></div>`).join('')}</div>` : '';
+
   const benefitsHtml = d.benefits ? `
     <div class="doc-h2">${t.benefitsIncluded}</div>
     <div class="benefits-card"><div class="benefits-grid">
@@ -638,12 +732,13 @@ function renderPreview(){
     </div>
     <div class="doc-rule"></div>
     <span class="status-chip" style="background:${st.bg};color:${st.color};">${st.label}</span>
-    <h1 class="doc-title">${t.quoteTitle}</h1>
+    <h1 class="doc-title">${d.quoteType === 'auto' ? t.quoteTitleAuto : t.quoteTitle}</h1>
     ${d.option ? `<p class="doc-subtitle">${escapeHtml(d.option)}</p>` : ''}
     <div class="company-band">
       <div class="name">${escapeHtml(d.company)}</div>
       <div class="meta">${d.usdot?t.usdotLabel+' '+escapeHtml(d.usdot):''} ${d.mc?'&nbsp;&nbsp;'+t.mcLabel+' '+escapeHtml(d.mc):''} ${d.effdate?'&nbsp;&nbsp;'+t.effLabel+' '+escapeHtml(d.effdate):''}</div>
     </div>
+    ${vehiclesHtml}
     <div class="cov-card">${covHtml}</div>
     ${benefitsHtml}
     ${schedHtml}
@@ -810,13 +905,14 @@ function collectRawState(){
     label: r.querySelector('.cov-label').value,
     value: r.querySelector('.cov-value').value,
   }));
+  const vehicles = [...document.querySelectorAll('#vehicle-list .vehicle-value')].map(el => el.value);
   const payments = [...document.querySelectorAll('#pay-body tr')].map(r => ({
     date: r.querySelector('.pay-date').value,
     amount: r.querySelector('.pay-amount').value,
   }));
   const fields = {};
   RAW_FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) fields[id] = el.value; });
-  return { fields, covs, payments, lang: currentLang, savedAt: new Date().toISOString() };
+  return { fields, covs, vehicles, quoteType, payments, lang: currentLang, savedAt: new Date().toISOString() };
 }
 
 function applyRawState(state){
@@ -824,8 +920,11 @@ function applyRawState(state){
     const el = document.getElementById(id);
     if (el) el.value = val;
   });
+  setQuoteType(state.quoteType || 'trucking', false);
   document.getElementById('cov-list').innerHTML = '';
   (state.covs || []).forEach(c => addCovRow(c));
+  document.getElementById('vehicle-list').innerHTML = '';
+  (state.vehicles || []).forEach(v => addVehicleRow(v));
   document.getElementById('pay-body').innerHTML = '';
   (state.payments || []).forEach(p => addPayRow(p.date, p.amount));
   if (state.lang) setLang(state.lang);
@@ -898,8 +997,10 @@ function resetForm(){
     if (el) el.value = val;
   });
   document.getElementById('f-status').value = 'Pending Approval';
+  setQuoteType('trucking', false);
   document.getElementById('cov-list').innerHTML = '';
   DEFAULT_COVERAGES.forEach(c => addCovRow(c));
+  document.getElementById('vehicle-list').innerHTML = '';
   document.getElementById('pay-body').innerHTML = '';
   addPayRow(); addPayRow(); addPayRow();
   document.getElementById('saved-search').value = '';
