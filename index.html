@@ -963,6 +963,7 @@ async function refreshSavedList(){
       const resp = await gsGet({ action: 'list' });
       if (resp && resp.ok) {
         savedQuotesCache = resp.quotes
+          .filter(q => !String(q.company || '').startsWith('MF|'))
           .map(q => ({ company: q.company, savedAt: q.savedAt, local: false }))
           .sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
         applySavedSearchFilter();
